@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crosshair on Chart</title>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+        #chart_div {
+            position: relative;
+            width: 900px;
+            height: 500px;
+        }
+        .crosshair {
+            position: absolute;
+            background: black;
+            pointer-events: none;
+        }
+        .horizontal {
+            height: 1px;
+            width: 100%;
+        }
+        .vertical {
+            width: 1px;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Financial Market Time Series</h1>
+    <div id="chart_div">
+        <div class="crosshair horizontal" id="horizontal"></div>
+        <div class="crosshair vertical" id="vertical"></div>
+    </div>
+    <script>
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
+
+        function drawChart() {
+            var data = google.visualization.arrayToDataTable([
+                ['Date', 'Low', 'Open', 'Close', 'High'],
+                ['Mon', 20, 28, 38, 45],
+                ['Tue', 31, 38, 55, 66],
+                ['Wed', 50, 55, 77, 80],
+                ['Thu', 77, 77, 66, 50],
+                ['Fri', 68, 66, 22, 15]
+            ]);
+
+            var options = {
+                legend:'none',
+                candlestick: {
+                    risingColor: {stroke: 'green', fill: 'green'},
+                    fallingColor: {stroke: 'red', fill: 'red'}
+                },
+                colors: ['black']
+            };
+
+            var chart = new google.visualization.CandlestickChart(document.getElementById('chart_div'));
+            chart.draw(data, options);
+        }
+
+        const chartDiv = document.getElementById('chart_div');
+        const horizontal = document.getElementById('horizontal');
+        const vertical = document.getElementById('vertical');
+
+        chartDiv.addEventListener('mousemove', function(e) {
+            const rect = chartDiv.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            horizontal.style.top = `${y}px`;
+            vertical.style.left = `${x}px`;
+        });
+
+        chartDiv.addEventListener('mouseleave', function() {
+            horizontal.style.top = '-9999px';
+            vertical.style.left = '-9999px';
+        });
+    </script>
+</body>
+</html>

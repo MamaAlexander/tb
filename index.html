@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Market Time Series</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+</head>
+<body>
+    <h1>Financial Market Time Series</h1>
+    <input type="file" id="my_file_input" />
+    <div id='output'></div>
+    <div class="container">
+        <div id="chart_div" style="width: 900px; height: 500px;"></div>
+        <div id="gisto_div" style="width: 900px; height: 100px; margin-top: -40px;"></div>
+    </div>
+    <button id="stop_button">Stop</button>
+    <button class="step_forward"> > </button>
+    <input type="checkbox" id="bollinger">Полосы Боллинджера</i>
+    <input type="checkbox" id="EMA">EMA</i>
+    <div>
+        <select id="scale_select" class="scale_select">
+            <option value="0">Scale</option>
+            <option value="5">5M</option>
+            <option value="10">10M</option>
+            <option value="15">15M</option>
+            <option value="30">30M</option>
+            <option value="40">40M</option>
+            <option value="60">1H</option>
+        </select>
+    </div>
+    <script>
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(initChart);
+
+        let Tiker = 'SBER';
+        let linesArray = [];
+        let stop_flag = 0;
+        let myChart;
+        let data;
+        let options;
+        let i = 0; 
+        let array_period = []; 
+        let indexes = [];
+        let scale_value = 0;
+        let c0_data = [];
+        let c_data = [];
+        let bollinger_flag = 0;
+        let EMA_flag = 0;
+
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = event => {
+                    const fileContent = event.target.result;
+                    const lines = fileContent.split('\n');
+                    linesArray = lines.map(line => line.split(','));
+                    resolve(linesArray);
+                    stop_flag = 0;
+                };
+                reader.onerror = error => reject(error);
+                reader.readAsText(file);
+            });
+        }
+
+        function initChart() {
+            data = google.visualization.arrayToDataTable([
+                ['Date', 'Low', 'Open', 'Close', 'High', 'EMA'],
+            ]);
+
+            options = {
+                legend: 'top',
+                candlestick: {
+                    risingColor: { stroke: 'green', fill: 'green' },
+                    fallingColor: { stroke: 'red', fill: 'red' }
+                },
+                series: {
+                    1: { type: 'line', color: 'blue' }
+                },
+                colors: ['black'],
+                height: 450, 
+                chartArea: { left: 50, top: 20, width: '90%', height: '75%' }
+            };
+
+            myChart = new google.visualization.CandlestickChart(document.getElementById('chart_div'));
+        }
+
+        google.charts.load("current", { packages: ["corechart"] });
+        c_data = [
+            ["Date", "Volume"]
+        ];
+
+        function drawHistogramChart(info, id) {
+            var my_data = google.visualization.arrayToDataTable(info);
+            var view = new google.visualization.DataView(my_data);
+
+            var options = {
+                title: "",
+                chartArea: { left: 50, top: 0, width: '90%', height: '100%' },
+                backgroundColor: 'transparent',
+                bar: { groupWidth: "95%" },
+                width: 900,
+                height: 100,
+                vAxis: { minValue: 0 },
+                hAxis: { slantedText: false, textPosition: 'none' }
+            };
+
+            var chart = new google.visualization.ColumnChart(document.getElementById(id));
+            chart.draw(view, options);
+        }
+
+        document.querySelector('input[type="file"]').addEventListener('change', async function() {
+            if (this.files[0]) {
+                try {
+                    await readFile(this.files[0]);
+
+                    i = Math.floor(Math.random() * (linesArray.length / 2));
+                    array_period = [];
+
+                    updateChart();
+
+                } catch (error) {
+                    console.error('Ошибка чтения файла:', error);
+                }
+            }
+        });
+
+        function calculateEMA(data, windowSize) {
+            if (!Array.isArray(data) || data.length === 0 || windowSize <= 0) {
+                return [];
+            }
+
+            function recursiveEMA(data, windowSize, index, previousEMA) {
+                if (index >= data.length) {
+                    return [];
+                }
+
+                const currentPrice = data[index - 1];
+
+                const currentEMA = (currentPrice - previousEMA) * (2 / (windowSize + 1)) + previousEMA;
+
+                const nextEMAs = recursiveEMA(data, windowSize, index + 1, currentEMA);
+
+                return [currentEMA, ...nextEMAs];
+            }
+
+            const initialEMA = data[0];
+
+            const emaValues = recursiveEMA(data, windowSize, 1, initialEMA);
+
+            const result = Array(windowSize - 1).fill(null).concat([initialEMA], emaValues);
+
+            return result;
+        }
+
+        function updateChart() {
+            if (i < linesArray.length && stop_flag === 0) {
+                let closePrices = array_period.map(row => row[3]);
+                let emaValues = calculateEMA(closePrices, 6);
+
+                if (linesArray[i][2].slice(11) === '07:00:00') {
+                    c0_data.push([linesArray[i][2], parseFloat(linesArray[i][7])]);
+                    indexes.push(i);
+                    array_period.push([
+                        linesArray[i][2],
+                        parseFloat(linesArray[i][6]),
+                        parseFloat(linesArray[i][3]),
+                        parseFloat(linesArray[i][4]),
+                        parseFloat(linesArray[i][5]),
+                        EMA_flag ? emaValues[emaValues.length - 1] : null
+                    ]);
+                } else {
+                    c0_data.push([linesArray[i][2].slice(11, 16), parseFloat(linesArray[i][7])]);
+                    indexes.push(i);
+                    array_period.push([
+                        linesArray[i][2].slice(11, 16),
+                        parseFloat(linesArray[i][6]),
+                        parseFloat(linesArray[i][3]),
+                        parseFloat(linesArray[i][4]),
+                        parseFloat(linesArray[i][5]),
+                        EMA_flag ? emaValues[emaValues.length - 1] : null
+                    ]);
+                }
+
+                if (array_period.length > scale_value) {
+                    array_period.shift();
+                    c0_data.shift();
+                }
+
+                data = google.visualization.arrayToDataTable([
+                    ['Date', 'Low', 'Open', 'Close', 'High', 'EMA'],
+                    ...array_period
+                ]);
+
+                c_data = [
+                    ["Date", "Volume"],
+                    ...c0_data
+                ];
+
+                myChart.draw(data, options);
+                drawHistogramChart(c_data, 'gisto_div');
+
+                i++;
+            }
+            if (stop_flag === 0) {
+                setTimeout(updateChart, 500); 
+            }
+        }
+
+        document.getElementById('stop_button').addEventListener('click', function() {
+            stop_flag = stop_flag === 0 ? 1 : 0;
+            if (stop_flag === 0) {
+                updateChart();
+            }
+        });
+
+        document.querySelectorAll('.step_forward').forEach(button => {
+            button.addEventListener('click', function() {
+                i = indexes[indexes.length - 1];
+                i++;
+                array_period.shift();
+
+                let closePrices = array_period.map(row => row[3]);
+                closePrices.push(parseFloat(linesArray[i][4]));
+                let emaValues = calculateEMA(closePrices, 6);
+
+                if (linesArray[i][2].slice(11) === '07:00:00') {
+                    c0_data.push([linesArray[i][2], parseFloat(linesArray[i][7])]);
+                    indexes.push(i);
+                    array_period.push([
+                        linesArray[i][2],
+                        parseFloat(linesArray[i][6]),
+                        parseFloat(linesArray[i][3]),
+                        parseFloat(linesArray[i][4]),
+                        parseFloat(linesArray[i][5]),
+                        EMA_flag ? emaValues[emaValues.length - 1] : null
+                    ]);
+                } else {
+                    c0_data.push([linesArray[i][2].slice(11, 16), parseFloat(linesArray[i][7])]);
+                    indexes.push(i);
+                    array_period.push([
+                        linesArray[i][2].slice(11, 16),
+                        parseFloat(linesArray[i][6]),
+                        parseFloat(linesArray[i][3]),
+                        parseFloat(linesArray[i][4]),
+                        parseFloat(linesArray[i][5]),
+                        EMA_flag ? emaValues[emaValues.length - 1] : null
+                    ]);
+                }
+
+                if (array_period.length > scale_value) {
+                    array_period.shift(); 
+                    c0_data.shift();
+                }
+
+                data = google.visualization.arrayToDataTable([
+                    ['Date', 'Low', 'Open', 'Close', 'High', 'EMA'],
+                    ...array_period
+                ]);
+
+                c_data = [
+                    ["Date", "Volume"],
+                    ...c0_data
+                ];
+
+                myChart.draw(data, options);
+                drawHistogramChart(c_data, 'gisto_div');
+                i++;
+            });
+        });
+
+        document.getElementById('scale_select').addEventListener('change', function() {
+            const selectedValue = this.value;
+            console.log('Selected value:', selectedValue);
+            scale_value = Number(selectedValue);
+        });
+
+        document.getElementById("bollinger").onclick = function() { 
+            bollinger_flag = bollinger_flag === 0 ? 1 : 0;
+        };
+
+        document.getElementById("EMA").onclick = function() { 
+            EMA_flag = EMA_flag === 0 ? 1 : 0;
+        };
+    </script>
+</body>
+</html>
+
