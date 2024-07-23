@@ -19,4 +19,4 @@ jobs:
         server: ftp://your-ftp-server.ru
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        local-dir: ./home/ale6415468
+        local-dir: ./home/ale6415468/alexanderosipyan.ru/docs
