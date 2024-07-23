@@ -19,4 +19,4 @@ jobs:
         server: ftp://ftp.ale6415468.nichost.ru
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        local-dir: ./home/ale6415468/alexanderosipyan.ru/docs/
+        local-dir: /home/ale6415468/alexanderosipyan.ru/docs/
