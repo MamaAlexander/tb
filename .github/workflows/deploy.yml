@@ -1,29 +1,18 @@
 name: Deploy to RU-CENTER
-
 on:
   push:
     branches:
-      - main  # замените на вашу ветку, если это не main
-
+      - main  
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-
-    - name: Create a temporary file
-      run: echo "This is a test file" > test.txt
-
-    - name: Ensure target directory exists
-      run: curl --ftp-create-dirs -T "test.txt" ftp://ftp.ale6415468.nichost.ru/alexanderosipyan.ru/docs/ --user ${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}
-
     - name: Deploy to RU-CENTER via FTP
       uses: SamKirkland/FTP-Deploy-Action@4.1.0
       with:
         server: ftp://ftp.ale6415468.nichost.ru
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        local-dir: ./  # убедитесь, что это указано правильно
-        server-dir: /home/ale6415468/alexanderosipyan.ru/docs/  # путь на сервере
+        local-dir: home/ale6415468/alexanderosipyan.ru/docs/
