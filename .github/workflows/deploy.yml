@@ -1,22 +1,18 @@
 name: Deploy to RU-CENTER
-
 on:
   push:
     branches:
       - main  
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-
     - name: Deploy to RU-CENTER via FTP
       uses: SamKirkland/FTP-Deploy-Action@4.1.0
       with:
         server: ftp://ftp.ale6415468.nichost.ru
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        local-dir: ./home/ale6415468/alexanderosipyan.ru/docs
+        local-dir: home/ale6415468/alexanderosipyan.ru/docs/
