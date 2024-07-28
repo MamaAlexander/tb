@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "binance-api-node": "^0.12.7",
+    "express": "^4.19.2"
+  }
+}

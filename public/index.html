@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Bot Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    .data {
+      margin-bottom: 20px;
+    }
+    .data p {
+      font-size: 18px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <input type="text" id="my-input" placeholder="Enter your API key" />
+  <input type="password" id="my-password" placeholder="Enter your API secret" />
+  <button id="submit-button">Submit</button>
+  
+  <div class="container">
+    <h1>Trading Bot Dashboard</h1>
+    <div class="data" id="balance">
+      <h2>Баланс</h2>
+      <p>Загрузка...</p>
+    </div>
+    <div class="data" id="price">
+      <h2>Текущая цена BTC/USDT</h2>
+      <p>Загрузка...</p>
+    </div>
+  </div>
+  
+  <script>
+    const buttonElement = document.querySelector('#submit-button');
+
+    buttonElement.addEventListener('click', async () => {
+      const apiKey = document.querySelector('#my-input').value;
+      const apiSecret = document.querySelector('#my-password').value;
+
+      console.log('API Key:', apiKey);
+      console.log('API Secret:', apiSecret);
+
+      // Отправка API ключа и секрета на сервер через POST-запрос
+      const response = await fetch('/api/set-credentials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ apiKey, apiSecret }),
+      });
+
+      if (response.ok) {
+        console.log('Credentials set successfully');
+        loadData();
+      } else {
+        console.error('Error setting credentials');
+      }
+    });
+
+    async function loadData() {
+      try {
+        // Загрузка баланса
+        const balanceResponse = await fetch('/api/balance');
+        if (!balanceResponse.ok) {
+          throw new Error('Ошибка получения баланса: ' + balanceResponse.statusText);
+        }
+        const usdtBalance = await balanceResponse.json();
+        document.getElementById('balance').innerHTML = `
+          <h2>Баланс</h2>
+          <table>
+            <tr>
+              <th>Актив</th>
+              <th>Количество</th>
+            </tr>
+            <tr>
+              <td>${usdtBalance.asset}</td>
+              <td>${usdtBalance.free}</td>
+            </tr>
+          </table>
+        `;
+
+        // Загрузка текущей цены BTC/USDT
+        const priceResponse = await fetch('/api/price/BTCUSDT');
+        if (!priceResponse.ok) {
+          throw new Error('Ошибка получения цены: ' + priceResponse.statusText);
+        }
+        const priceData = await priceResponse.json();
+        document.getElementById('price').innerHTML = `
+          <h2>Текущая цена BTC/USDT</h2>
+          <p>${priceData['BTCUSDT']}</p>
+        `;
+      } catch (error) {
+        console.error('Ошибка загрузки данных:', error);
+        document.getElementById('balance').innerHTML = `<h2>Баланс</h2><p>${error.message}</p>`;
+        document.getElementById('price').innerHTML = `<h2>Текущая цена BTC/USDT</h2><p>${error.message}</p>`;
+      }
+      setTimeout(loadData, 500);
+    }
+  </script>
+</body>
+</html>
