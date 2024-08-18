@@ -60,7 +60,7 @@ $-DM_t =Low_{t-1} − Low_t $ (если положительная и больш
 
 $$TR = max(High_t, \ Close_{t-1}) - min(Low_t, \ Close_{t-1})$$
 
-$$+DI = EMA\left(\frac{+DM}{TR}\right)$$
-$$-DI = EMA\left(\frac{-DM}{TR}\right)$$
+$+DI = EMA\left(\frac{+DM}{TR}\right)$ \\
+$-DI = EMA\left(\frac{-DM}{TR}\right)$
 
 $$ADX = 100 \cdot EMA_{14}\left(\frac{|+DI - (-DI)|}{+DI + (-DI)}\right)$$
